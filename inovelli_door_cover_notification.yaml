@@ -1,0 +1,414 @@
+blueprint:
+  name: Inovelli Red Series LZW31-SN Dimmer - LED Notifications based on combo of
+    Door and Garage
+  description: The idea is to matrix a Door lock status and a garage door (cover)
+    status to give you different light effects. Also it will fire off a moible phone
+    notificaiton. For this blueprint to work, however, you MUST have two separate
+    inovelli scripts installed (inovelli_led.yaml & inovelli_led_set_defaults.yaml).
+  domain: automation
+  input:
+    lock:
+      name: Door Lock
+      description: The lock that we want to trigger on
+      default: lock.august_smart_lock_pro_3rd_gen
+      selector:
+        entity:
+          domain: lock
+    cover1:
+      name: Garage Door 1
+      default: cover.garage_door1
+      selector:
+        entity:
+          domain: cover
+    cover2:
+      name: Garage Door 2
+      default: cover.garage_door2
+      selector:
+        entity:
+          domain: cover          
+    light:
+      name: Inovelli Light
+      description: zwave_js supported Inovelli lights will show up here
+      default: light.red_series_dimmer
+      selector:
+        entity:
+          integration: zwave_js
+          domain: light
+    effect:
+      description: Choose a default state transition effect.
+      selector:
+        select:
+          options:
+          - 'Off'
+          - Solid
+          - Chase
+          - Fast Blink
+          - Slow Blink
+          - Blink
+          - Pulse
+          - Breath
+    cover1openeffect:
+      description: Choose a state transition effect when cover 1 is open.
+      selector:
+        select:
+          options:
+          - Solid
+          - Chase
+          - Fast Blink
+          - Slow Blink
+          - Blink
+          - Pulse
+          - Breath   
+    cover2openeffect:
+      description: Choose a state transition effect when cover 2 is open.
+      selector:
+        select:
+          options:
+          - Solid
+          - Chase
+          - Fast Blink
+          - Slow Blink
+          - Blink
+          - Pulse
+          - Breath        
+    bothcoversopeneffect:
+      description: Choose a state transition effect when both covers are open.
+      selector:
+        select:
+          options:
+          - Solid
+          - Chase
+          - Fast Blink
+          - Slow Blink
+          - Blink
+          - Pulse
+          - Breath                    
+    duration:
+      description: How long should the effect run?
+      selector:
+        select:
+          options:
+          - 'Off'
+          - 1 Second
+          - 2 Seconds
+          - 3 Seconds
+          - 4 Seconds
+          - 5 Seconds
+          - 6 Seconds
+          - 7 Seconds
+          - 8 Seconds
+          - 9 Seconds
+          - 10 Seconds
+          - 15 Seconds
+          - 20 Seconds
+          - 25 Seconds
+          - 30 Seconds
+          - 35 Seconds
+          - 40 Seconds
+          - 45 Seconds
+          - 50 Seconds
+          - 55 Seconds
+          - 60 Seconds
+          - 2 Minutes
+          - 3 Minutes
+          - 4 Minutes
+    door_locked_garages_closed_color:
+      name: Door Locked / Garages Closed Color
+      default: Green
+      selector:
+        select:
+          options:
+          - 'Off'
+          - Red
+          - Orange
+          - Yellow
+          - Green
+          - Cyan
+          - Teal
+          - Blue
+          - Purple
+          - Light Pink
+          - Pink
+    door_locked_garagex_open_color:
+      name: Door Locked / 1 or more Garage Open
+      description: Pick a color for the combo of a locked door and an open garage
+      default: Yellow
+      selector:
+        select:
+          options:
+          - 'Off'
+          - Red
+          - Orange
+          - Yellow
+          - Green
+          - Cyan
+          - Teal
+          - Blue
+          - Purple
+          - Light Pink
+          - Pink   
+    door_unlocked_garage_closed_color:
+      name: Door Unlocked / Garages Closed Color
+      default: Orange
+      selector:
+        select:
+          options:
+          - 'Off'
+          - Red
+          - Orange
+          - Yellow
+          - Green
+          - Cyan
+          - Teal
+          - Blue
+          - Purple
+          - Light Pink
+          - Pink
+    door_unlocked_garagex_open_color:
+      name: Door Unlocked / Garages Open
+      description: Pick a color for the combo of an unlocked door and one or more garages open
+      default: Red
+      selector:
+        select:
+          options:
+          - 'Off'
+          - Red
+          - Orange
+          - Yellow
+          - Green
+          - Cyan
+          - Teal
+          - Blue
+          - Purple
+          - Light Pink
+          - Pink
+    notify_device:
+      name: Device to notify
+      description: Device needs to run the official Home Assistant app to receive
+        notifications
+      selector:
+        device:
+          integration: mobile_app
+  source_url: https://raw.githubusercontent.com/jeeftor/HomeAssistant/master/blueprints/automation/inovelli_door_cover_notification.yaml
+mode: restart
+trigger:
+- platform: state
+  entity_id: !input 'cover1'
+  to: open
+- platform: state
+  entity_id: !input 'cover1'
+  to: closed
+- platform: state
+  entity_id: !input 'cover2'
+  to: open
+- platform: state
+  entity_id: !input 'cover2'
+  to: closed  
+- platform: state
+  entity_id: !input 'lock'
+  to: locked
+- platform: state
+  entity_id: !input 'lock'
+  to: unlocked
+action:
+- choose:
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: closed
+    - condition: state
+      entity_id: !input 'cover2'
+      state: closed      
+    - condition: state
+      entity_id: !input 'lock'
+      state: locked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garages_closed_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garages_closed_color'
+        effect: !input 'effect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: All Closed
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: closed
+    - condition: state
+      entity_id: !input 'cover2'
+      state: closed  
+    - condition: state
+      entity_id: !input 'lock'
+      state: unlocked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garage_closed_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garage_closed_color'
+        effect: !input 'effect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: Garages Closed - Door Unlocked
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: open
+    - condition: state
+      entity_id: !input 'cover2'
+      state: closed      
+    - condition: state
+      entity_id: !input 'lock'
+      state: locked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garagex_open_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garagex_open_color'
+        effect: !input 'cover1openeffect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: Garage 1 Open - Door Locked
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: closed
+    - condition: state
+      entity_id: !input 'cover2'
+      state: open      
+    - condition: state
+      entity_id: !input 'lock'
+      state: locked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garagex_open_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garagex_open_color'
+        effect: !input 'cover2openeffect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: Garage 2 Open - Door Locked
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: open
+    - condition: state
+      entity_id: !input 'cover2'
+      state: open      
+    - condition: state
+      entity_id: !input 'lock'
+      state: locked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garagex_open_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_locked_garagex_open_color'
+        effect: !input 'bothcoversopeneffect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: Both Garages Open - Door Locked
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: open
+    - condition: state
+      entity_id: !input 'cover2'
+      state: closed     
+    - condition: state
+      entity_id: !input 'lock'
+      state: unlocked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garagex_open_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garagex_open_color'
+        effect: !input 'cover1openeffect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: Garage 1 Open - Door Unlocked
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: closed
+    - condition: state
+      entity_id: !input 'cover2'
+      state: open     
+    - condition: state
+      entity_id: !input 'lock'
+      state: unlocked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garagex_open_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garagex_open_color'
+        effect: !input 'cover2openeffect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: Garage 2 Open - Door Unlocked
+  - conditions:
+    - condition: state
+      entity_id: !input 'cover1'
+      state: open
+    - condition: state
+      entity_id: !input 'cover2'
+      state: open     
+    - condition: state
+      entity_id: !input 'lock'
+      state: unlocked
+    sequence:
+    - service: script.inovelli_led_set_defaults
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garagex_open_color'
+    - service: script.inovelli_led
+      data:
+        entity_id: !input 'light'
+        color: !input 'door_unlocked_garagex_open_color'
+        effect: !input 'bothcoversopeneffect'
+        duration: !input 'duration'
+    - device_id: !input 'notify_device'
+      domain: mobile_app
+      type: notify
+      message: Both Garages Open - Door Unlocked      
