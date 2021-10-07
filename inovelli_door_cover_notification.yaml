@@ -189,7 +189,7 @@ blueprint:
       selector:
         device:
           integration: mobile_app
-  source_url: https://raw.githubusercontent.com/jeeftor/HomeAssistant/master/blueprints/automation/inovelli_door_cover_notification.yaml
+  source_url: https://raw.githubusercontent.com/mdande/inovelli_door_covers_notifications/main/inovelli_door_cover_notification.yaml
 mode: restart
 trigger:
 - platform: state
